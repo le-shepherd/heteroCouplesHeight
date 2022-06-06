@@ -1,0 +1,278 @@
+---
+title: "Height distribution in heterosexual pairs: biased or random?"
+author: "Martin Schäfer"
+date: "`r Sys.Date()`, Version 1.1"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+# What is this about?
+
+Eckert & McConnell-Ginet (2013:6) state: "Approximately half of the women and half of the men in the USA (Kuczmarski et al. 2000 [CDC Growth Charts: United States. Advance Data from Vital and Health Statistics]) are between 64 and 70 inches tall. With this considerable overlap, one might expect in any randomly chosen male and female pair that the woman would run a good chance of being taller than the man. In actuality, among heterosexual couples, one only occasionally sees such a combination, because height is a significant factor in people's choice of a heterosexual mate. While there is no biological reason for women to be shorter than their male mates, an enormous majority of couples exhibit this height relation --- far more than would occur through a process of selection in which height was random (Goffman 1976)."
+
+And Goffman's (1979[1976]:28) formulation: "Selective mating then enters to
+ensure that very nearly every couple will exhibit a height difference
+in the expected direction, transforming what would
+otherwise be a statistical tendency into a near certitude."
+
+Here, the aim is to check (a) whether the height differences are really this obvious and (b) whether any observed difference really is statistially biased.
+
+# Data collection
+
+Data was collected in the class *Language and gender* at the University Wuppertal (2022-05-18), with seventeen participants. 
+Question: Please give the number of heterosexual couples that you know well in the age-bracket 20--25. In addition, provide a breakdown into pairings: female taller than male, male taller than female, same height.
+
+This results in the following distribution across the 131 pairings:
+
+
+```{r,echo=FALSE,results='hide'}
+set.seed(247)
+# data from class session on 2022-05-19
+allData <- data.frame(participant=c(1:17),totalHetCouples =c(10,8,5,8,7,10,12,20,10,5,5,9,5,12,0,1,4),maleTaller=c(8,6,2,7,7,8,12,15,8,4,4,5,3,10,0,0,3),femaleTaller=c(0,0,2,0,0,1,0,3,1,0,0,1,0,0,0,1,0),sameHeight=c(2,2,1,1,0,1,0,2,1,1,1,3,2,2,0,0,1))
+# allData
+
+sum(allData$totalHetCouples)
+sum(allData$maleTaller)
+sum(allData$femaleTaller)
+sum(allData$sameHeight)
+
+# use as our sample
+
+# same height, male taller,female taller
+
+classData <- data.frame(hetCouples=c(1:sum(allData$totalHetCouples)),difference=c(rep("male taller",sum(allData$maleTaller)),rep("female taller",sum(allData$femaleTaller)),rep("same height",sum(allData$sameHeight))))
+
+str(classData)
+
+```
+
+
+```{r,echo=FALSE,results='markup'}
+print(table(classData$difference))
+barplot(table(classData$difference),ylab="number of pairings")
+```
+
+
+# Simulate pairings
+
+We create several simulated populations. The simulated populations are using the real-life means reported for Germany (1.68 vs. 1.81, cf. https://www.destatis.de/DE/Themen/Gesellschaft-Umwelt/Gesundheit/Gesundheitszustand-Relevantes-Verhalten/Tabellen/liste-koerpermasse.html, 20-25 age bracket). They are either based on 1000 datapoints in each category, or 10,000 datapoints in each category. One sample illustrates what would minimally fall under a large effect size, the more realistic samples use more realistic standard deviations, cf. https://en.wikipedia.org/wiki/Standard_deviation#Standard_deviation_of_average_height_for_adult_men for American men and https://www.biancahoegel.de/mathe/statistik/standardabweichung.html for German teenagers. In the first realistic samples, both standard deviations are set to 7cm, in the second realistic sample, the standard deviation for females is set to 6.5cm.
+
+
+```{r,echo=FALSE,results='hide'}
+# sampleLargeEffect1000  <- data.frame(height=c(rnorm(n=1000,mean=168,sd=16.25),
+#                                            rnorm(n=1000,mean=181,sd=16.25)
+#                                           ),
+#                                      sex= rep(c("female",
+#                                                   "male"),
+#                                                each=1000)
+#                                      )
+
+# head(sampleLargeEffect1000)
+# sampleLargeEffect1000$height <- round(sampleLargeEffect1000$height,digits=0)
+
+
+sampleLargeEffect10000  <- data.frame(height=c(rnorm(n=10000,mean=168,sd=16.25),
+                                           rnorm(n=10000,mean=181,sd=16.25)
+                                          ),
+                                     sex= rep(c("female",
+                                                  "male"),
+                                               each=10000)
+                                     )
+
+# sample with more realistic sd: 7 cm
+# standard deviation from American Men according to wikipedia (3 inches)
+# https://en.wikipedia.org/wiki/Standard_deviation#Standard_deviation_of_average_height_for_adult_men
+# Or here:
+# https://www.biancahoegel.de/mathe/statistik/standardabweichung.html
+
+
+sampleRealisticEffect10000  <- data.frame(height=c(rnorm(n=10000,mean=168,sd=7),
+                                           rnorm(n=10000,mean=181,sd=7)
+                                          ),
+                                     sex= rep(c("female",
+                                                  "male"),
+                                               each=10000)
+                                     )
+
+sampleRealisticEffect10000var  <- data.frame(height=c(rnorm(n=10000,mean=168,sd=6.5),
+                                           rnorm(n=10000,mean=181,sd=7.5)
+                                          ),
+                                     sex= rep(c("female",
+                                                  "male"),
+                                               each=10000)
+                                     )
+
+
+head(sampleLargeEffect10000)
+tail(sampleLargeEffect10000)
+
+str(sampleLargeEffect10000)
+```
+
+
+```{r,echo=FALSE,results='markup'}
+boxplot(sampleLargeEffect10000$height ~ sampleLargeEffect10000$sex,xlab="sex",ylab="height (in cm)",main="Height distribution by sex, large effect, same SDs")
+boxplot(sampleRealisticEffect10000$height ~ sampleRealisticEffect10000$sex,xlab="sex",ylab="height (in cm)",main="Height distribution by sex, realistic effect, equal SDs")
+boxplot(sampleRealisticEffect10000var$height ~ sampleRealisticEffect10000var$sex,xlab="sex",ylab="height (in cm)",main="Height distribution by sex, realistic effect, unequal SDs")
+```
+
+
+
+# Comparison to the class data
+
+## Drawing hetero pairs from the population
+
+Heteros pairs are drawn from the population and annotated for the direction of the height differences. Note: "same height" was annotated within the +- 2 cm range. That is, any pair within 2 cm of difference was annotated as "same height".
+
+
+```{r,echo=FALSE,results='markup'}
+    
+# All this is done via the helper-function "heteroSample"
+
+# function to draw samples
+heteroSample  <- function(populationSample,number){
+    populationSample$height <- round(populationSample$height,digits=0)
+    femalePairmember <- populationSample[sample(x=1:(length(populationSample$height)/2),size=number,replace=FALSE),"height"]
+    malePairmember <- populationSample[sample(x=((length(populationSample$height)/2) + 1):length(populationSample$height),size=number,replace=FALSE),"height"]
+    simPairs <- data.frame(femaleHeight=femalePairmember,maleHeight=malePairmember)
+simPairs$difference  <- NA
+
+for (i in 1:length(simPairs$femaleHeight)) {
+    # print(i)
+    # print(simPairs[i,])
+    # if (simPairs[i,"femaleHeight"] == simPairs[i,"maleHeight"]){
+    if (simPairs[i,"femaleHeight"] == simPairs[i,"maleHeight"] | (simPairs[i,"femaleHeight"] > (simPairs[i,"maleHeight"] - 2.1) & simPairs[i,"femaleHeight"] < (simPairs[i,"maleHeight"] + 2.1))){
+        simPairs[i,"difference"] <- "same height"
+    } else {
+         if (simPairs[i,"femaleHeight"] > simPairs[i,"maleHeight"]){
+        simPairs[i,"difference"] <- "female taller"
+        } else {
+    if (simPairs[i,"femaleHeight"] < simPairs[i,"maleHeight"]){
+        simPairs[i,"difference"] <- "male taller"
+        }
+
+        }
+         }
+    
+    }
+
+    return(simPairs)
+}
+
+
+
+
+
+
+```
+## Run xi-square tests
+
+10 samples of the same size as the class sample are drawn and compared via X-squared tests. Number of X-squared tests showing significant differences (alpha level = 0.01) are reported. 
+
+### sample large effect
+
+```{r,echo=FALSE,results='markup'}
+
+# sigCollector <- c()
+# for (i in 1:10){
+#    simPairs <- heteroSample(sampleLargeEffect10000,131)
+#    simPairs$source <- "sim"
+#    classData$source <- "class"
+#    fullData <- rbind(simPairs[,c("difference","source")],classData[,c("difference","source")])
+#    print(table(fullData$difference,fullData$source))
+#    print(chisq.test(table(fullData$difference,fullData$source)))
+#    print(i) 
+#    sigValue <- chisq.test(table(fullData$difference,fullData$source))$p.value
+#    sigCollector <- c(sigCollector,sigValue)
+# }
+
+# print(paste(length(sigCollector[sigCollector<.01]),"/10"),sep="")
+
+
+tenTests  <- function(populationSample,number,times=10){
+sigCollector <- c()
+for (i in 1:times){
+   simPairs <- heteroSample(populationSample,number)
+   simPairs$source <- "sim"
+   classData$source <- "class"
+   fullData <- rbind(simPairs[,c("difference","source")],classData[,c("difference","source")])
+   # print(table(fullData$difference,fullData$source))
+   # print(chisq.test(table(fullData$difference,fullData$source)))
+   # print(i) 
+   sigValue <- chisq.test(table(fullData$difference,fullData$source))$p.value
+   sigCollector <- c(sigCollector,sigValue)
+}
+
+print(paste("Significantly different (X-square, p<.01): ",length(sigCollector[sigCollector<.01]),"/",times),sep="")
+}
+
+tenTests(sampleLargeEffect10000,131)
+
+```
+
+### sample realistic  effect, equal variance
+
+```{r,echo=FALSE,results='markup'}
+
+# for (i in 1:10){
+#    simPairs <- heteroSample(sampleRealisticEffect10000,131)
+#    simPairs$source <- "sim"
+#    classData$source <- "class"
+#    fullData <- rbind(simPairs[,c("difference","source")],classData[,c("difference","source")])
+#    print(table(fullData$difference,fullData$source))
+#    print(chisq.test(table(fullData$difference,fullData$source)))
+#    print(i) 
+#     }
+
+
+tenTests(sampleRealisticEffect10000,131)
+
+
+```
+
+### sample realistic  effect, unequal variance
+
+```{r,echo=FALSE,results='markup'}
+
+# for (i in 1:10){
+#    simPairs <- heteroSample(sampleRealisticEffect10000var,131)
+#    simPairs$source <- "sim"
+#    classData$source <- "class"
+#    fullData <- rbind(simPairs[,c("difference","source")],classData[,c("difference","source")])
+#    print(table(fullData$difference,fullData$source))
+#    print(chisq.test(table(fullData$difference,fullData$source)))
+#    print(i) 
+# }
+
+tenTests(sampleRealisticEffect10000var,131)
+
+
+
+```
+Just to be sure: run more tests.
+
+
+```{r,echo=FALSE,results='markup'}
+print("large effect size:")
+tenTests(sampleLargeEffect10000,131,100)
+print("realistic effect size, same SDs:")
+tenTests(sampleRealisticEffect10000,131,100)
+print("realistic effect size, varying SDs:")
+tenTests(sampleRealisticEffect10000var,131,100)
+```
+
+
+# Discussion
+
+For both realistic samples, there is mostly know statistically significant differences between the pairings collected in class and the random pairings from the simulated population. Having said that, the data was collected in a class on language and gender, that is, neither in very clean elicitation conditions nor in an unbiased context. 
+
+# References
+
+Eckert, P. and McConnell-Ginet, S. (2013). Language and Gender. 2nd edition. Cambridge University Press
+
+Goffman, Erving (1979). Gender advertisements. London: Macmillan [Orginally published 1976 in Studies in the Anthropology of Visual Communication, 3: 69--154]  
